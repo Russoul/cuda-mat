@@ -11,7 +11,12 @@
 #include <algorithm>
 
 #include <cusolverSp.h>
-#include <sys/time.h>
+
+#ifndef _TIMES_H
+
+#include "sys/times.h"
+
+#endif
 
 
 
