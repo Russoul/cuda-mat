@@ -237,11 +237,42 @@ int main(){
     float *X_d;
     float *b_d;
 
-    int n = 100;
-    float prob = 0.75;
-    float min = -1;
-    float max = 1;
+    int n;
+    float prob;
+    float probVector;
+    float min;
+    float max;
     float tol = 0.005;
+
+
+    using namespace std;
+
+    cout << "Input N: ";
+    cin >> n;
+    cout << "Input probability of zero while generating sparse matrix: ";
+    cin >> prob;
+    cout << "Input probability of zero while generating sparse vector: ";
+    cin >> probVector;
+    cout << "Input min value: ";
+    cin >> min;
+    cout << "Input max value: ";
+    cin >> max;
+
+    if(n <= 1){
+        cerr << "for N must hold: N > 1" << endl;
+        return 0;
+    }
+
+    if(prob < 0 || prob > 1 || probVector < 0 || probVector > 1){
+        cerr << "for probability must hold: 0 <= P <= 1" << endl;
+        return 0;
+    }
+
+    if(min > max){
+        cerr << "for min/max values must hold: min <= max" << endl;
+    }
+
+
 
     cusparseMatDescr_t descr;
     cusparseCreateMatDescr(&descr);
@@ -250,7 +281,7 @@ int main(){
     std::vector<float> b(n);
 
     int NNZ = gen_rand_csr_matrix(n, n, &A, &IA, &JA, prob, min, max);
-    gen_rand_vector(n, &b[0], 0, -1, 1);
+    gen_rand_vector(n, &b[0], probVector, min, max);
     std::cout << dump_sparse_matrix(n,n, &A[0], &IA[0], &JA[0]) << std::endl;
 
     std::cout << dump_vector(n, &b[0]) << std::endl;

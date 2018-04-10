@@ -22,7 +22,7 @@ include_directories(sys)
  
 cuda_add_executable(
         cuda
-        main.cu helper_math.h sys/times.h sys/times.cpp)
+        main.cu helper_math.h sys/times.h)
  
  
 target_link_libraries(cuda cusparse cusolver ${OpenMP_CXX_FLAGS})
