@@ -243,6 +243,7 @@ int main(){
     float min;
     float max;
     float tol = 0.005;
+	bool print;
 
 
     using namespace std;
@@ -257,6 +258,8 @@ int main(){
     cin >> min;
     cout << "Input max value: ";
     cin >> max;
+	cout << "Output random sparse matrix and vector to the console ?";
+	cin >> print;
 
     if(n <= 1){
         cerr << "for N must hold: N > 1" << endl;
@@ -282,9 +285,11 @@ int main(){
 
     int NNZ = gen_rand_csr_matrix(n, n, &A, &IA, &JA, prob, min, max);
     gen_rand_vector(n, &b[0], probVector, min, max);
-    std::cout << dump_sparse_matrix(n,n, &A[0], &IA[0], &JA[0]) << std::endl;
 
-    std::cout << dump_vector(n, &b[0]) << std::endl;
+	if(print)
+		std::cout << dump_sparse_matrix(n,n, &A[0], &IA[0], &JA[0]) << std::endl;
+	if(print)
+		std::cout << dump_vector(n, &b[0]) << std::endl;
 
 
     cudaMalloc(&A_d, sizeof(float) * A.size());
@@ -307,7 +312,7 @@ int main(){
     status = cusolverSpScsrlsvqr(handle, n, A.size(), descr, A_d, IA_d, JA_d, b_d, tol, 0, X_d, &singularity);
     auto t2 = cur_time_ms();
 
-    printf("delta time %d ms\n", t2 - t1);
+    
 
 
     if(status != CUSOLVER_STATUS_SUCCESS){
@@ -323,6 +328,8 @@ int main(){
 
         std::cout << "resulting vector:\n";
         std::cout << dump_vector(n, &X[0]) << std::endl;
+
+		printf("delta time %d ms\n", t2 - t1);
 
     }
 
