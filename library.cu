@@ -92,9 +92,13 @@ namespace cudamat{
             for (int j = 0; j < m; ++j) {
                 bool zero = rand_float_0_1() <= probability_of_zero;
                 if(!zero){
-                    A->push_back(rand_float(min, max));
-                    JA->push_back(j);
-                    row_count += 1;
+                    auto r = rand_float(min, max);
+                    if(r != 0.0F){
+                        A->push_back(r);
+                        JA->push_back(j);
+                        row_count += 1;
+                    }
+
                 }
 
             }
@@ -188,7 +192,7 @@ namespace cudamat{
         int            deviceCount;
         cudaDeviceProp devProp;
 
-        cudaGetDeviceCount ( &deviceCount );
+        gpuErrchk(cudaGetDeviceCount ( &deviceCount ));
 
         printf ( "Found %d devices\n", deviceCount );
 
@@ -290,17 +294,17 @@ namespace cudamat{
         float *b_d;
         // =====================
 
-        cudaMalloc(&A_d, sizeof(float) * NNZ);
-        cudaMalloc(&IA_d, sizeof(float) * (N+1));
-        cudaMalloc(&JA_d, sizeof(float) * NNZ);
-        cudaMalloc(&X_d, sizeof(float) * N);
-        cudaMalloc(&b_d, sizeof(float) * N);
+        gpuErrchk(cudaMalloc(&A_d, sizeof(float) * NNZ));
+        gpuErrchk(cudaMalloc(&IA_d, sizeof(float) * (N+1)));
+        gpuErrchk(cudaMalloc(&JA_d, sizeof(float) * NNZ));
+        gpuErrchk(cudaMalloc(&X_d, sizeof(float) * N));
+        gpuErrchk(cudaMalloc(&b_d, sizeof(float) * N));
 
 
-        cudaMemcpy(A_d, A, sizeof(float) * NNZ, cudaMemcpyHostToDevice);
-        cudaMemcpy(IA_d, IA, sizeof(float) * (N+1), cudaMemcpyHostToDevice);
-        cudaMemcpy(JA_d, JA, sizeof(float) * NNZ, cudaMemcpyHostToDevice);
-        cudaMemcpy(b_d, b, sizeof(float) * N, cudaMemcpyHostToDevice);
+        gpuErrchk(cudaMemcpy(A_d, A, sizeof(float) * NNZ, cudaMemcpyHostToDevice));
+        gpuErrchk(cudaMemcpy(IA_d, IA, sizeof(float) * (N+1), cudaMemcpyHostToDevice));
+        gpuErrchk(cudaMemcpy(JA_d, JA, sizeof(float) * NNZ, cudaMemcpyHostToDevice));
+        gpuErrchk(cudaMemcpy(b_d, b, sizeof(float) * N, cudaMemcpyHostToDevice));
 
         int singularity;
         auto status = cusolverSpScsrlsvqr(handle.cusolver_handle, N, NNZ, descr, A_d, IA_d, JA_d, b_d, tolerance, 0, X_d, &singularity);
@@ -313,17 +317,17 @@ namespace cudamat{
 
             if(singularity == -1){
                 *x = static_cast<float *>(malloc(sizeof(float) * N));
-                cudaMemcpy(*x, X_d, sizeof(float)*N, cudaMemcpyDeviceToHost);
+                gpuErrchk(cudaMemcpy(*x, X_d, sizeof(float)*N, cudaMemcpyDeviceToHost));
             }
 
 
         }
 
-        cudaFree(A_d);
-        cudaFree(IA_d);
-        cudaFree(JA_d);
-        cudaFree(X_d);
-        cudaFree(b_d);
+        gpuErrchk(cudaFree(A_d));
+        gpuErrchk(cudaFree(IA_d));
+        gpuErrchk(cudaFree(JA_d));
+        gpuErrchk(cudaFree(X_d));
+        gpuErrchk(cudaFree(b_d));
 
         return singularity == -1;
 

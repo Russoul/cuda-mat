@@ -35,7 +35,7 @@ int main(){
     std::cin >> min;
     std::cout << "Input max value: ";
     std::cin >> max;
-    std::cout << "Output random sparse matrix and vector to the console ?";
+    std::cout << "Output random sparse matrix and vector to the console ?(0/1): ";
     std::cin >> print;
 
     if(n <= 1){
