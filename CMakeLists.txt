@@ -9,8 +9,10 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(CUDA QUIET REQUIRED)
 find_package(OpenMP REQUIRED)
 #set(CUDA_VERBOSE_BUILD ON)
+
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
  
-#add_executable(dummy dummy.cpp) #needed to bypass clion-cuda issue
+add_executable(dummy dummy.cpp) #needed to bypass clion-cuda issue
  
  
 #add_executable(cuda_mat main.cpp Matrix.h util.h givens.h) //wont work with gcc < 7 (cuda requires it)
@@ -20,9 +22,14 @@ link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
 
 include_directories(sys)
  
-cuda_add_executable(
-        cuda
-        main.cu helper_math.h sys/times.h)
+cuda_add_library(
+        cuda_mat SHARED
+        library.cu helper_math.h sys/times.h)
  
  
-target_link_libraries(cuda cusparse cusolver ${OpenMP_CXX_FLAGS})
+target_link_libraries(cuda_mat cusparse cusolver ${OpenMP_CXX_FLAGS})
+
+
+add_executable(example example.cpp library.h)
+
+target_link_libraries(example cuda_mat)

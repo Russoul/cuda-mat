@@ -116,7 +116,7 @@ bool has_singular_root(int rank, int m){
 }
 
 template<class T>
-Matrix<T> back_substitution_singular_root(const Matrix<T> &A){
+Matrix<T> back_substitution_single_root(const Matrix<T> &A){
     auto res = Matrix<T>(A.n, 1, 0);
 
     for (int i = A.n - 1; i >= 0; --i) {

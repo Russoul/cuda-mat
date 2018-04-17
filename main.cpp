@@ -2,6 +2,8 @@
 #include "Matrix.h"
 #include "givens.h"
 
+
+//CPU Ax = b solver
 int main() {
 
 
