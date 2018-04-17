@@ -90,7 +90,7 @@ int main(){
 
         str << "solution(" << (t2 - t1) << " ms): " << std::endl;
 
-        cudamat::dump_vector(str, n, &b[0]);
+        cudamat::dump_vector(str, n, &x[0]);
 
         str << std::endl;
 
