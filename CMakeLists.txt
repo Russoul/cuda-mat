@@ -16,6 +16,8 @@ add_executable(dummy dummy.cpp) #needed to bypass clion-cuda issue
  
  
 #add_executable(cuda_mat main.cpp Matrix.h util.h givens.h) //wont work with gcc < 7 (cuda requires it)
+
+include_directories(include)
  
 link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
 link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
@@ -27,9 +29,14 @@ cuda_add_library(
         library.cu helper_math.h sys/times.h)
  
  
-target_link_libraries(cuda_mat cusparse cusolver ${OpenMP_CXX_FLAGS})
+target_link_libraries(cuda_mat ${OpenMP_CXX_FLAGS})
 
 
 add_executable(example example.cpp library.h)
 
-target_link_libraries(example cuda_mat)
+find_library(PARALUTION
+        NAMES paralution
+        HINTS "${CMAKE_PREFIX_PATH}"
+        )
+
+target_link_libraries(example cuda_mat ${PARALUTION})

@@ -9,12 +9,10 @@
 #include <string>
 #include <sstream>
 
+
+
 namespace cudamat{
 
-    struct CudaMatHandle{ //opaque struct
-        void* __a__;
-        void* __b__;
-    };
 
 
     extern "C"{
@@ -26,10 +24,12 @@ namespace cudamat{
         void dump_vector(std::ostringstream &stream, int n, float *vector);
         long int cur_time_ms();
         void print_device_info();
-        void init(CudaMatHandle *handle_out);
-        void destroy(CudaMatHandle handle);
-        bool solve_linear_system_qr_svd(CudaMatHandle handle, size_t N, size_t NNZ, float* A, int* IA, int* JA, float* b, float tolerance, float** x);
 
+        //select particular GPU
+        void select_device(int);
+        void init();
+        void destroy();
+        void solve_linear_system_fixedPoint_jacobi(size_t N, size_t NNZ, float* A, int* IA, int* JA, float* b, float** x, double* dt_micro_sec);
 
     }
 }
