@@ -1,2 +1,2 @@
 # cuda_mat
-solver of systems of linear equations implemented on GPU, CUDA
+this is a library that uses the reference CUDA bicgstab Ax=b solver implementation
