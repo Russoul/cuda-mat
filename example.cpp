@@ -47,12 +47,13 @@ int main (int argc, char *argv[]){
 	bool random = false;
 	double probOfZero = 0.75;
 	int dimRand = 3;
+	bool print = false;
 	
 
 	
 
     /* WARNING: it is assumed that the matrices are stores in Matrix Market format */
-    printf("WARNING: it is assumed that the matrices are stores in Matrix Market format with double as element type\n Usage: ./BiCGStab -M[matrix.mtx] -V[vector.mtx] [-E] [-D] -R[prob of zero] -N[dim] [device=<num>]\n");
+    printf("WARNING: it is assumed that the matrices are stored in Matrix Market format with double as element type\n Usage: ./BiCGStab -M[matrix.mtx] -V[vector.mtx] [-E] [-D] -R[prob of zero] -N[dim] [-P] [device=<num>]\n");
 
     printf("Starting [%s]\n", argv[0]);
     int i=0;
@@ -75,8 +76,9 @@ int main (int argc, char *argv[]){
 			case 'R':
 				random = true;
 				probOfZero = std::stod(argv[i] + 2);
-				probOfZero = probOfZero / 100;
-				
+				break;
+			case 'P':
+				print = true;
 				break;
 			case 'N':
 				dimRand = std::stoi(argv[i] + 2);
@@ -160,14 +162,14 @@ int main (int argc, char *argv[]){
 		ArowsIndex = &IA[0];
 		AcolsIndex = &JA[0];
 
-		std::cout << matrixN << std::endl;
-		std::cout << nnz << std::endl;
+		
 		
 
 		status = test_bicgstab(matrixN, nnz, Aval, ArowsIndex, AcolsIndex, b, debug, damping, maxit, tol,
-			DBICGSTAB_MAX_ULP_ERR, DBICGSTAB_EPS);
+			DBICGSTAB_MAX_ULP_ERR, DBICGSTAB_EPS, print);
 
 
+		std::cout.flush();
 		_getch();
 
 		free(b);
@@ -208,8 +210,9 @@ int main (int argc, char *argv[]){
 		toDenseVector(vM, vnnz, vA, vIA, b);
 
 		status = test_bicgstab(matrixN, nnz, Aval, ArowsIndex, AcolsIndex, b, debug, damping, maxit, tol,
-			DBICGSTAB_MAX_ULP_ERR, DBICGSTAB_EPS);
+			DBICGSTAB_MAX_ULP_ERR, DBICGSTAB_EPS, print);
 
+		std::cout.flush();
 		_getch();
 
 		free(b);

@@ -44,4 +44,4 @@ void toDenseVector(int n, int nnz, double* A, int* IA, double* out);
 
 int test_bicgstab(int matrixN, int nnz, double* Aval, int* ArowsIndex, int* AcolsIndex, double* b,
 	int debug, double damping, int maxit, double tol,
-	float err, float eps);
+	float err, float eps, bool print);

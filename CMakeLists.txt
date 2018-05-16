@@ -28,4 +28,4 @@ cuda_add_library(cuda_mat SHARED mmio.c mmio.h mmio_wrapper.h helper_cuda.h help
 target_link_libraries(cuda_mat cusparse cublas cudart_static)
 add_executable(example pbicgstab.h example.cpp)
 
-target_link_libraries(example cuda_mat)
+target_link_libraries(example cusparse cublas cudart_static cuda_mat)
