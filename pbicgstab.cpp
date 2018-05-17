@@ -107,7 +107,7 @@ static void gpu_pbicgstab(cublasHandle_t cublasHandle, cusparseHandle_t cusparse
     checkCudaErrors(cublasDcopy(cublasHandle, n, r, 1, rw, 1));
     checkCudaErrors(cublasDcopy(cublasHandle, n, r, 1, p, 1)); 
     checkCudaErrors(cublasDnrm2(cublasHandle, n, r, 1, &nrmr0));
-    //printf("gpu, init residual:norm %20.16f\n",nrmr0); 
+    printf("gpu, init residual:norm %20.16f\n",nrmr0); 
 
     for (i=0; i<maxit; ){
         rhop = rho;

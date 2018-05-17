@@ -49,7 +49,6 @@ int main (int argc, char *argv[]){
 	int dimRand = 3;
 	bool print = false;
 	
-
 	
 
     /* WARNING: it is assumed that the matrices are stores in Matrix Market format */
@@ -99,7 +98,7 @@ int main (int argc, char *argv[]){
     {
         printf("argv[0] = %s", argv[0]);
 		//matrix_filename = "gr_900_900_crg.mtx";
-		matrix_filename = "t1.mtx";
+		matrix_filename = "mat3.mtx";
 
         if (matrix_filename != NULL)
         {
@@ -120,7 +119,7 @@ int main (int argc, char *argv[]){
 	if (vector_filename == NULL)
 	{
 		printf("argv[0] = %s", argv[0]);
-		vector_filename = "t1v.mtx";
+		vector_filename = "vec3.mtx";
 
 		if (vector_filename != NULL)
 		{
@@ -155,6 +154,7 @@ int main (int argc, char *argv[]){
 
 		matrixN = dimRand;
 		b = (double*)malloc(sizeof(double) * matrixN);
+		memset(b, 0, sizeof(double)*matrixN);
 		gen_rand_csr_matrix(matrixN, matrixN, &A, &IA, &JA, probOfZero, -10.0, 10.0);
 		gen_rand_vector(matrixN, b, 0.0, -10.0, 10.0);
 		nnz = A.size();
@@ -170,7 +170,7 @@ int main (int argc, char *argv[]){
 
 
 		std::cout.flush();
-		_getch();
+		//_getch();
 
 		free(b);
 
@@ -195,6 +195,7 @@ int main (int argc, char *argv[]){
 		}
 
 
+
 		if (matrixN != matrixM) {
 			fprintf(stderr, "Matrix A must be a square matrix !\n");
 			return EXIT_FAILURE;
@@ -206,6 +207,9 @@ int main (int argc, char *argv[]){
 		}
 
 		b = (double*)malloc(sizeof(double) * matrixN);
+		//memset(b, 0, sizeof(double)*matrixN);
+
+		//gen_rand_vector(matrixN, b, 0.0, -10, 10);
 
 		toDenseVector(vM, vnnz, vA, vIA, b);
 
@@ -213,7 +217,7 @@ int main (int argc, char *argv[]){
 			DBICGSTAB_MAX_ULP_ERR, DBICGSTAB_EPS, print);
 
 		std::cout.flush();
-		_getch();
+		//_getch();
 
 		free(b);
 		free(vA);
