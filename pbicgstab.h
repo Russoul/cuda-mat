@@ -12,23 +12,13 @@
 #pragma once
 
 #include <typeinfo> // for usage of C++ typeid
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 #include <cuda_runtime.h>
 #include <vector>
 #include <conio.h>
 #include <sstream>
 #include <iostream>
 
-  
 
- //profiling the code
-#define TIME_INDIVIDUAL_LIBRARY_CALLS
-
-#define DBICGSTAB_MAX_ULP_ERR   100
-#define DBICGSTAB_EPS           1.E-14f //9e-2
 
 double rand_float_0_1();
 
@@ -42,6 +32,4 @@ void dump_vector(std::ostringstream &stream, int n, double *vector);
 
 void toDenseVector(int n, int nnz, double* A, int* IA, double* out);
 
-int test_bicgstab(int matrixN, int nnz, double* Aval, int* ArowsIndex, int* AcolsIndex, double* b,
-	int debug, double damping, int maxit, double tol,
-	float err, float eps, bool print);
+int bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, double tol, bool debug, double *x);

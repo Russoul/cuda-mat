@@ -139,8 +139,7 @@ int loadMMSparseMatrix(
     int *nnz, 
     double **aVal, 
     int **aRowInd, 
-    int **aColInd, 
-    int extendSymMatrix)
+    int **aColInd)
 {
     MM_typecode matcode;
     double *tempVal;
@@ -169,8 +168,8 @@ int loadMMSparseMatrix(
         return 1;     
     }
 
-    /* if necessary symmetrize the pattern (transform from triangular to full) */
-    if ((extendSymMatrix) && (mm_is_symmetric(matcode) || mm_is_hermitian(matcode) || mm_is_skew(matcode))){
+    /* if necessary symmetrize the pattern (transform from triangular to full), always do it if needed */
+    if (mm_is_symmetric(matcode) || mm_is_hermitian(matcode) || mm_is_skew(matcode)){
         //count number of non-diagonal elements
         count=0;
         for(i=0; i<(*nnz); i++){

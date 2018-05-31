@@ -10,10 +10,6 @@
  */
 
 #include <typeinfo> // for usage of C++ typeid
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 #include <cuda_runtime.h>
 #include <vector>
 #include <conio.h>
@@ -36,25 +32,24 @@
 
 int main (int argc, char *argv[]){
     int status = EXIT_FAILURE;
-    char * matrix_filename = NULL;
-	char * vector_filename = NULL;
-
-    int symmetrize=0;
-    int debug=0;
-    int maxit = 2000; //5; //2000; //1000;  //50; //5; //50; //100; //500; //10000;
-    double tol= 0.0000001; //0.000001; //0.00001; //0.00000001; //0.0001; //0.001; //0.00000001; //0.1; //0.001; //0.00000001;
-    double damping= 0.75;
-	bool random = false;
-	double probOfZero = 0.75;
-	int dimRand = 3;
+    char *matrix_filename = NULL;
+	char *vector_filename = NULL;
+    bool debug=false;
+    double prob_of_zero_mat = 0.1;
+    double prob_of_zero_vec = 0.1;
+    int dim = 4;
 	bool print = false;
-	
-	
+
+
+	const int maxit = 2000;
+    const double tol= 0.0000001;
+
+
 
     /* WARNING: it is assumed that the matrices are stores in Matrix Market format */
-    printf("WARNING: it is assumed that the matrices are stored in Matrix Market format with double as element type\n Usage: ./BiCGStab -M[matrix.mtx] -V[vector.mtx] [-E] [-D] -R[prob of zero] -N[dim] [-P] [device=<num>]\n");
+    printf("WARNING: it is assumed that the matrices are stored in Matrix Market format with double as element type\n Usage: ./BiCGStab -M[matrix.mtx] -V[vector.mtx] [-D] -R[prob of zero] -N[dim] [-P] [device=<num>]\n"
+		   "By default matrix will be random, N = 4, P(X = 0)=0.1, vector will be random, P(X = 0)=0.1\n");
 
-    printf("Starting [%s]\n", argv[0]);
     int i=0;
     int temp_argc = argc;
     while (argc) {
@@ -66,21 +61,17 @@ int main (int argc, char *argv[]){
 			case 'V':
 				vector_filename = argv[i] + 2;
 				break;
-            case 'E':
-                symmetrize = 1;
-                break;     
             case 'D':
-                debug = 1;
+                debug = true;
                 break;    
 			case 'R':
-				random = true;
-				probOfZero = std::stod(argv[i] + 2);
+				prob_of_zero_mat = std::stod(argv[i] + 2);
 				break;
 			case 'P':
 				print = true;
 				break;
 			case 'N':
-				dimRand = std::stoi(argv[i] + 2);
+				dim = std::stoi(argv[i] + 2);
 				break;
             default:
                 fprintf (stderr, "Unknown switch '-%s'\n", argv[i]+1);
@@ -93,111 +84,83 @@ int main (int argc, char *argv[]){
 
     argc = temp_argc;
 
-    // Use default input file
-    if (matrix_filename == NULL)
-    {
-        printf("argv[0] = %s", argv[0]);
-		//matrix_filename = "gr_900_900_crg.mtx";
-		matrix_filename = "mat3.mtx";
-
-        if (matrix_filename != NULL)
-        {
-            printf("Using default matrix input file [%s]\n", matrix_filename);
-        }
-        else
-        {
-            printf("Could not find input file = %s\n", matrix_filename);
-            return EXIT_FAILURE;
-        }
-    }
-    else
-    {
-        printf("Using matrix input file [%s]\n", matrix_filename);
+    if (matrix_filename != NULL){
+		printf("Using matrix input file [%s]\n", matrix_filename);
     }
 
-	// Use default input file
-	if (vector_filename == NULL)
-	{
-		printf("argv[0] = %s", argv[0]);
-		vector_filename = "vec3.mtx";
 
-		if (vector_filename != NULL)
-		{
-			printf("Using default vector input file [%s]\n", vector_filename);
-		}
-		else
-		{
-			printf("Could not find input file = %s\n", vector_filename);
-			return EXIT_FAILURE;
-		}
-	}
-	else
-	{
+	if (vector_filename != NULL) {
 		printf("Using vector input file [%s]\n", vector_filename);
 	}
 
+
     findCudaDevice(argc, (const char **)argv);
 
-	int matrixM;
-	int matrixN;
+	int n;
 	int nnz;
-	double* Aval;
-	int* ArowsIndex;
-	int* AcolsIndex;
-	double* b = 0;
-	
+	double *A;
+	int *iA;
+	int *jA;
+	double *b = nullptr;
+	double *x = nullptr;
 
-	if (random) {
-		std::vector<double> A;
-		std::vector<int> IA;
-		std::vector<int> JA;
+	if (matrix_filename != nullptr){
 
-		matrixN = dimRand;
-		b = (double*)malloc(sizeof(double) * matrixN);
-		memset(b, 0, sizeof(double)*matrixN);
-		gen_rand_csr_matrix(matrixN, matrixN, &A, &IA, &JA, probOfZero, -10.0, 10.0);
-		gen_rand_vector(matrixN, b, 0.0, -10.0, 10.0);
-		nnz = A.size();
-		Aval = &A[0];
-		ArowsIndex = &IA[0];
-		AcolsIndex = &JA[0];
+		int matrixN;
+		int matrixM;
 
-		
-		
-
-		status = test_bicgstab(matrixN, nnz, Aval, ArowsIndex, AcolsIndex, b, debug, damping, maxit, tol,
-			DBICGSTAB_MAX_ULP_ERR, DBICGSTAB_EPS, print);
-
-
-		std::cout.flush();
-		//_getch();
-
-		free(b);
-
-		return status;
-	}
-	else {
-		if (loadMMSparseMatrix(matrix_filename, 'd', true, &matrixM, &matrixN, &nnz, &Aval, &ArowsIndex, &AcolsIndex, symmetrize)) {
+		if (loadMMSparseMatrix(matrix_filename, 'd', true, &matrixM, &matrixN, &nnz, &A, &iA, &jA)) {
 			fprintf(stderr, "!!!! cusparseLoadMMSparseMatrix FAILED\n");
 			return EXIT_FAILURE;
 		}
+
+		if(matrixN != matrixM){
+			fprintf(stderr, "!!!! square matrix is expected\n");
+			return EXIT_FAILURE;
+		}
+
+		n = matrixN;
+
+
+	}else{
+
+		std::vector<double> _A;
+		std::vector<int> _IA;
+		std::vector<int> _JA;
+
+
+
+		nnz = gen_rand_csr_matrix(dim, dim, &_A, &_IA, &_JA, prob_of_zero_mat, -10.0, 10.0);
+		n = dim;
+
+
+		A = static_cast<double *>(malloc(sizeof(double) * nnz));
+		iA = static_cast<int *>(malloc(sizeof(int) * (n + 1)));
+		jA = static_cast<int *>(malloc(sizeof(int) * nnz));
+
+		if(_A.empty()){
+			fprintf(stderr, "!!!! all random elements of the random matrix are zeros !\n");
+			return EXIT_FAILURE;
+		}
+
+		memcpy(A, &_A[0], sizeof(double)*nnz);
+		memcpy(iA, &_IA[0], sizeof(int)*(n + 1));
+		memcpy(jA, &_JA[0], sizeof(int)*nnz);
+
+
+	}
+
+	if(vector_filename != nullptr){
 
 		int vN;
 		int vM;
 		int vnnz;
-		double* vA;
-		int* vIA;
-		int* vJA;
+		double *vA = nullptr;
+		int* vIA = nullptr;
+		int* vJA = nullptr;
 
-		if (loadMMSparseMatrix(vector_filename, 'd', true, &vM, &vN, &vnnz, &vA, &vIA, &vJA, 0)) {
+		if (loadMMSparseMatrix(vector_filename, 'd', true, &vM, &vN, &vnnz, &vA, &vIA, &vJA)) {
 			fprintf(stderr, "!!!! cusparseLoadMMSparseMatrix FAILED\n");
-			return EXIT_FAILURE;
-		}
-
-
-
-		if (matrixN != matrixM) {
-			fprintf(stderr, "Matrix A must be a square matrix !\n");
 			return EXIT_FAILURE;
 		}
 
@@ -206,31 +169,48 @@ int main (int argc, char *argv[]){
 			return EXIT_FAILURE;
 		}
 
-		b = (double*)malloc(sizeof(double) * matrixN);
-		//memset(b, 0, sizeof(double)*matrixN);
+		if (vM != n) {
+			fprintf(stderr, "incorrect dim\n");
+			return EXIT_FAILURE;
+		}
 
-		//gen_rand_vector(matrixN, b, 0.0, -10, 10);
+		b = (double*)malloc(sizeof(double) * n);
 
 		toDenseVector(vM, vnnz, vA, vIA, b);
 
-		status = test_bicgstab(matrixN, nnz, Aval, ArowsIndex, AcolsIndex, b, debug, damping, maxit, tol,
-			DBICGSTAB_MAX_ULP_ERR, DBICGSTAB_EPS, print);
-
-		std::cout.flush();
-		//_getch();
-
-		free(b);
 		free(vA);
 		free(vIA);
 		free(vJA);
-
-		return status;
-
+	}else{
+		b = (double*)malloc(sizeof(double) * n);
+		gen_rand_vector(n, b, prob_of_zero_vec, -10.0, 10.0);
 
 	}
 
+	x = static_cast<double *>(malloc(sizeof(double) * n));
+
+	std::cout << "nnz=" << nnz << std::endl;
+
+	auto t1 = second();
+	status = bicgstab(n, nnz, A, iA, jA, b, maxit, tol, debug, x);
+	auto t2 = second();
+
+	if(print){
+		std::cout << "result:" << std::endl;
+		std::ostringstream s;
+		dump_vector(s, n, x);
+		std::cout << s.str() << std::endl;
+	}
+
+	std::cout << "total delta time = " << t2 - t1 << std::endl;
+
+	free(x);
+	free(b);
+	free(A);
+	free(iA);
+	free(jA);
 
 
-    return 0;
+    return status;
 }
 
