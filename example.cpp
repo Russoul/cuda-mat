@@ -36,7 +36,7 @@ int main (int argc, char *argv[]){
 	char *vector_filename = NULL;
     bool debug=false;
     double prob_of_zero_mat = 0.1;
-    double prob_of_zero_vec = 0.1;
+    double prob_of_zero_vec = 0.0;
     int dim = 4;
 	bool print = false;
 
@@ -48,7 +48,12 @@ int main (int argc, char *argv[]){
 
     /* WARNING: it is assumed that the matrices are stores in Matrix Market format */
     printf("WARNING: it is assumed that the matrices are stored in Matrix Market format with double as element type\n Usage: ./BiCGStab -M[matrix.mtx] -V[vector.mtx] [-D] -R[prob of zero] -N[dim] [-P] [device=<num>]\n"
-		   "By default matrix will be random, N = 4, P(X = 0)=0.1, vector will be random, P(X = 0)=0.1\n");
+		   "By default matrix will be random, N = 4, P(X = 0)=0.1, vector will be random, P(X = 0)=0.1\n"
+           "example usage:\n"
+           "./example.exe -M\"mat10000.mtx\"\n"
+           "./example.exe -M\"mat3.mtx\" -V\"vec3.mtx\" -D -P\n"
+		   "./example.exe -N\"40\" -R\"0.5\" -D\n"
+		   );
 
     int i=0;
     int temp_argc = argc;
@@ -130,8 +135,9 @@ int main (int argc, char *argv[]){
 
 
 
-		nnz = gen_rand_csr_matrix(dim, dim, &_A, &_IA, &_JA, prob_of_zero_mat, -10.0, 10.0);
+		nnz = gen_rand_csr_matrix(dim, dim, &_A, &_IA, &_JA, prob_of_zero_mat, 1.0, 5.0);
 		n = dim;
+
 
 
 		A = static_cast<double *>(malloc(sizeof(double) * nnz));
@@ -183,7 +189,7 @@ int main (int argc, char *argv[]){
 		free(vJA);
 	}else{
 		b = (double*)malloc(sizeof(double) * n);
-		gen_rand_vector(n, b, prob_of_zero_vec, -10.0, 10.0);
+		gen_rand_vector(n, b, prob_of_zero_vec, 1, 5.0);
 
 	}
 
@@ -191,18 +197,28 @@ int main (int argc, char *argv[]){
 
 	std::cout << "nnz=" << nnz << std::endl;
 
+
+	double dtAlg;
 	auto t1 = second();
-	status = bicgstab(n, nnz, A, iA, jA, b, maxit, tol, debug, x);
+	bool solved = bicgstab(n, nnz, A, iA, jA, b, maxit, tol, debug, x, &dtAlg);
 	auto t2 = second();
 
-	if(print){
-		std::cout << "result:" << std::endl;
-		std::ostringstream s;
-		dump_vector(s, n, x);
-		std::cout << s.str() << std::endl;
-	}
 
-	std::cout << "total delta time = " << t2 - t1 << std::endl;
+
+	if(solved){
+		std::cout << "success" << std::endl;
+		if(print){
+			std::cout << "result:" << std::endl;
+			std::ostringstream s;
+			dump_vector(s, n, x);
+			std::cout << s.str() << std::endl;
+		}
+
+		std::cout << "algorithm delta time = " << dtAlg << " s" << std::endl;
+		std::cout << "total delta time = " << t2 - t1 << " s" << std::endl;
+	}else{
+		std::cerr << "method failed" << std::endl;
+	}
 
 	free(x);
 	free(b);

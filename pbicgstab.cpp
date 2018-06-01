@@ -33,7 +33,7 @@
 
 
 
-static void gpu_pbicgstab2(
+static bool gpu_pbicgstab2(
         cublasHandle_t cublasHandle,
         cusparseHandle_t cusparseHandle,
         int n,
@@ -156,8 +156,18 @@ static void gpu_pbicgstab2(
         }
 
 		if(norm < tol * norm0){
-			return;
+			return true;
 		}
+
+
+		if(abs(omega) < 1e-5 || isnan(omega)){
+            if(debug){
+                std::cout << "omega is close to zero, cannot continue" << std::endl;
+                std::cout << "omega = " << omega << std::endl;
+            }
+
+            return false;
+        }
 
 		checkCudaErrors(cudaMemcpy(r, r_, sizeof(double) * n, cudaMemcpyDeviceToDevice));
 		checkCudaErrors(cudaMemcpy(p, p_, sizeof(double) * n, cudaMemcpyDeviceToDevice));
@@ -166,10 +176,12 @@ static void gpu_pbicgstab2(
 		rho = rho_;
 	}
 
+	return false;
+
 
 }
 
-int bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, double tol, bool debug, double *x){
+bool bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, double tol, bool debug, double *x, double *dtAlg){
 
 
     cublasHandle_t cublasHandle  = nullptr;
@@ -200,19 +212,19 @@ int bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, 
     /* initialize cublas */
     if (cublasCreate(&cublasHandle) != CUBLAS_STATUS_SUCCESS) {
         fprintf( stderr, "!!!! CUBLAS initialization error\n" );
-        return EXIT_FAILURE;
+        return false;
     }
     /* initialize cusparse */
     status1 = cusparseCreate(&cusparseHandle);
     if (status1 != CUSPARSE_STATUS_SUCCESS) {
         fprintf( stderr, "!!!! CUSPARSE initialization error\n" );
-        return EXIT_FAILURE;
+        return false;
     }
     /* create three matrix descriptors */
     status1 = cusparseCreateMatDescr(&descrA);
     if ((status1 != CUSPARSE_STATUS_SUCCESS)){
         fprintf( stderr, "!!!! CUSPARSE cusparseCreateMatDescr (coefficient matrix) error\n" );
-        return EXIT_FAILURE;
+        return false;
     }
 
     /* allocate device memory for csr matrix and vectors */
@@ -273,8 +285,8 @@ int bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, 
     }
 
 
-
-    gpu_pbicgstab2(cublasHandle,
+    auto t1 = second();
+    auto res = gpu_pbicgstab2(cublasHandle,
                    cusparseHandle,
                    n,
                    nnz,
@@ -299,6 +311,8 @@ int bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, 
                    dev_t,
                    dev_h
     );
+    auto t2 = second();
+    *dtAlg = t2 - t1;
 
     checkCudaErrors(cudaDeviceSynchronize());
 
@@ -332,7 +346,7 @@ int bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, 
 
 
 
-    return EXIT_SUCCESS;
+    return res;
 }
 
 
@@ -357,11 +371,13 @@ int gen_rand_csr_matrix(int n, int m, std::vector<double> *A, std::vector<int> *
 			bool zero = rand_float_0_1() <= probability_of_zero;
 			if (!zero) {
 				auto r = rand_float(min, max);
-				if (r != 0.0F) {
-					A->push_back(r);
-					JA->push_back(j + 1);//base 1
-					row_count += 1;
+				while (abs(r) < 0.01F) {
+					r = rand_float(min, max);
 				}
+
+                A->push_back(r);
+                JA->push_back(j + 1);//base 1
+                row_count += 1;
 
 			}
 		}
@@ -377,14 +393,7 @@ void gen_rand_vector(int n, double *vector, double probability_of_zero, double m
 	}
 }
 
-void dump_vector(std::ostringstream &stream, int n, double *vector) {
-	stream << "(";
-	for (int i = 0; i < n; ++i) {
-		stream << std::to_string(vector[i]) + " ";
-	}
-	stream << ")";
 
-}
 
 void toDenseVector(int n, int nnz, double* A, int* IA, double* out) {
 	int sum = 0;

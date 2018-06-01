@@ -28,8 +28,16 @@ int gen_rand_csr_matrix(int n, int m, std::vector<double> *A, std::vector<int> *
 
 void gen_rand_vector(int n, double *vector, double probability_of_zero, double min, double max);
 
-void dump_vector(std::ostringstream &stream, int n, double *vector);
+template <typename T>
+void dump_vector(std::ostringstream &stream, int n, T *vector) {
+    stream << "(";
+    for (int i = 0; i < n; ++i) {
+        stream << std::to_string(vector[i]) + " ";
+    }
+    stream << ")";
+
+}
 
 void toDenseVector(int n, int nnz, double* A, int* IA, double* out);
 
-int bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, double tol, bool debug, double *x);
+bool bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, double tol, bool debug, double *x, double *dtAlg);
