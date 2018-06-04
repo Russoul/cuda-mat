@@ -26,11 +26,87 @@
 #include "helper_cuda.h"
 
 #include "pbicgstab.h"
- 
 
 
 
-int main (int argc, char *argv[]){
+
+void test_A0_d(){
+	int n;
+	int m;
+	int nnz;
+	double *A0;
+	int *iA0;
+	int *jA0;
+    loadMMSparseMatrix(const_cast<char *>("mat3_A0.mtx"), 'd', true, &m, &n, &nnz, &A0, &iA0, &jA0);
+
+    int nnz1;
+
+    double *d;
+    int *id;
+    int *jd;
+
+    loadMMSparseMatrix(const_cast<char *>("vec3_d.mtx"), 'd', true, &m, &n, &nnz1, &d, &id, &jd);
+
+	int nnz2;
+
+	double *b;
+	int *ib;
+	int *jb;
+
+	loadMMSparseMatrix(const_cast<char *>("vec3.mtx"), 'd', true, &m, &n, &nnz2, &b, &ib, &jb);
+
+    double d_dense[3];
+	double b_dense[3];
+
+    double x0[3] = {1,1,1};
+
+    for (int i = 0; i < nnz1; ++i) {
+        std::cout << d[i] << std::endl;
+
+    }
+
+    std::cout << "--" << std::endl;
+
+    for (int i = 0; i < m + 1; ++i) {
+        std::cout << id[i] << std::endl;
+
+    }
+
+
+    toDenseVector(m, nnz1, d, id, d_dense);
+	toDenseVector(m, nnz2, b, ib, b_dense);
+
+	std::cout << "base " << Base::Base1 << std::endl;
+
+	double dt;
+	double x[3];
+
+	std::cout << "nnz " << nnz << std::endl;
+    std::cout << "m " << m << std::endl;
+
+    bicgstab(m, nnz, A0, iA0, jA0, d_dense, x0, b_dense, 2000, 1e-5, true, x, &dt);
+
+    std::ostringstream stream;
+    dump_vector(stream, 3, x);
+    dump_vector(stream, 3, d_dense);
+    dump_vector(stream, 3, b_dense);
+
+    std::cout << stream.str() << std::endl;
+
+    free(A0);
+    free(iA0);
+    free(jA0);
+    free(d);
+    free(id);
+    free(jd);
+    free(b);
+    free(ib);
+    free(jb);
+
+}
+
+
+int main1 (int argc, char *argv[]){
     int status = EXIT_FAILURE;
     char *matrix_filename = NULL;
 	char *vector_filename = NULL;
@@ -135,7 +211,7 @@ int main (int argc, char *argv[]){
 
 
 
-		nnz = gen_rand_csr_matrix(dim, dim, &_A, &_IA, &_JA, prob_of_zero_mat, 1.0, 5.0);
+		nnz = gen_rand_csr_matrix<Base::Base1>(dim, dim, &_A, &_IA, &_JA, prob_of_zero_mat, 1.0, 5.0, 1e-2);
 		n = dim;
 
 
@@ -198,12 +274,12 @@ int main (int argc, char *argv[]){
 	std::cout << "nnz=" << nnz << std::endl;
 
 
+
+
 	double dtAlg;
 	auto t1 = second();
 	bool solved = bicgstab(n, nnz, A, iA, jA, b, maxit, tol, debug, x, &dtAlg);
 	auto t2 = second();
-
-
 
 	if(solved){
 		std::cout << "success" << std::endl;

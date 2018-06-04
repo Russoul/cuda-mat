@@ -17,14 +17,63 @@
 #include <conio.h>
 #include <sstream>
 #include <iostream>
+#include <functional>
 
 
+enum Base{
+    Base0 = 0,
+    Base1 = 1
+};
 
 double rand_float_0_1();
 
 double rand_float(double min, double max);
 
-int gen_rand_csr_matrix(int n, int m, std::vector<double> *A, std::vector<int> *IA, std::vector<int> *JA, double probability_of_zero, double min, double max);
+template<Base base>
+int gen_rand_csr_matrix(int n, int m, std::vector<double> *A, std::vector<int> *IA, std::vector<int> *JA, double probability_of_zero, double min, double max, double eps) {
+    IA->push_back(base);//base
+    int row_count = base; //NNZ, base
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            bool zero = rand_float_0_1() <= probability_of_zero;
+            if (!zero) {
+                auto r = rand_float(min, max);
+                while (abs(r) < eps) {
+                    r = rand_float(min, max);
+                }
+
+                A->push_back(r);
+                JA->push_back(j + base);//base
+                row_count += 1;
+
+            }
+        }
+        IA->push_back(row_count);
+    }
+
+    return A->size();
+}
+
+template<Base base>
+int fill_csr_matrix(int n, int m, std::vector<double> *A, std::vector<int> *IA, std::vector<int> *JA,
+                    std::function<double(int, int)> f, double eps) {
+    IA->push_back(base);//base
+    int row_count = base; //NNZ, base
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            double el = f(i, j);
+            if (abs(el) > eps) {
+                A->push_back(el);
+                JA->push_back(j + base);//base
+                row_count += 1;
+
+            }
+        }
+        IA->push_back(row_count);
+    }
+
+    return A->size();
+}
 
 void gen_rand_vector(int n, double *vector, double probability_of_zero, double min, double max);
 
@@ -38,6 +87,9 @@ void dump_vector(std::ostringstream &stream, int n, T *vector) {
 
 }
 
+
+
 void toDenseVector(int n, int nnz, double* A, int* IA, double* out);
 
 bool bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, double tol, bool debug, double *x, double *dtAlg);
+bool bicgstab(int n, int nnz, double *A0, int *iA0, int *jA0, double *d, double *x0, double *b, int maxit, double tol, bool debug, double *x, double *dtAlg);

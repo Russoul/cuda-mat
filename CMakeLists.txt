@@ -23,7 +23,7 @@ include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
  
 
 
-cuda_add_library(cuda_mat SHARED mmio.c mmio.h mmio_wrapper.h helper_cuda.h helper_cusolver.h helper_string.h pbicgstab.h pbicgstab.cpp)
+cuda_add_library(cuda_mat SHARED mmio.c mmio.h mmio_wrapper.h helper_cuda.h helper_cusolver.h helper_string.h pbicgstab.h pbicgstab.cu)
 
 target_link_libraries(cuda_mat cusparse cublas cudart_static)
 add_executable(example pbicgstab.h example.cpp)
