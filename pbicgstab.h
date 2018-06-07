@@ -88,8 +88,33 @@ void dump_vector(std::ostringstream &stream, int n, T *vector) {
 }
 
 
-
 void toDenseVector(int n, int nnz, double* A, int* IA, double* out);
 
-bool bicgstab(int n, int nnz, double *A, int *iA, int *jA, double *b, int maxit, double tol, bool debug, double *x, double *dtAlg);
-bool bicgstab(int n, int nnz, double *A0, int *iA0, int *jA0, double *d, double *x0, double *b, int maxit, double tol, bool debug, double *x, double *dtAlg);
+#define IN  //function argument marked as `input`
+#define OUT //function argument marked as `output`
+
+//common arguments
+
+//n - dimension of input matrix `A` of equation `Ax = b`
+//nnz - number of non zero elements in matrix `A`
+//A - array of non zero elements of size `nnz`
+//iA - array of row sizes of size `n + 1`, iA[0] is always `0` in case of `base 0` or 1 in case of `base 1`
+//by default .mtx files use `base 1`
+//jA - array of column indices of non zero elements of size `nnz` (indexing starts from `0` in case of `base 0` and from `1` otherwise)
+//b - dense vector of right hand side of equation
+//maxit - maximum iterations before halting the algorithm
+//debug - whether to print debug info or not
+//x - output result, solution to equation
+//dtAlg - output delta time of GPU part of the algorithm (I/O is not accounted)
+
+//matrix A can be represented as A = A0 + I*d (can be used only without preconditioner)
+
+//solve Ax = b, no preconditioner
+bool bicgstab(int n, int nnz, double IN(*A), int IN(*iA), int IN(*jA), double IN(*b), int maxit, double tol, bool debug, double OUT(*x), double OUT(*dtAlg));
+
+//solve (A0 + I*d)x = b, no preconditioner
+bool bicgstab(int n, int nnz, double IN(*A0), int IN(*iA0), int IN(*jA0), double IN(*d), double IN(*x0), double IN(*b), int maxit, double tol, bool debug, double OUT(*x), double OUT(*dtAlg));
+
+//solve Ax = b, LU preconditioner, for i = j must hold: A[i,j] != 0
+bool bicgstab_lu_precond(int n, int nnz, double IN(*A), int IN(*iA), int IN(*jA), double IN(*b),
+                  int maxit, double tol, bool debug, double OUT(*x), double OUT(*dtAlg));

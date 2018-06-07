@@ -106,25 +106,84 @@ void test_A0_d(){
 }
 
 
-int main1 (int argc, char *argv[]){
+void test1(){
+    int n;
+    int m;
+    int nnz;
+    double *A0;
+    int *iA0;
+    int *jA0;
+    loadMMSparseMatrix(const_cast<char *>("mat3.mtx"), 'd', true, &m, &n, &nnz, &A0, &iA0, &jA0);
+
+
+    int nnz2;
+
+    double *b;
+    int *ib;
+    int *jb;
+
+    loadMMSparseMatrix(const_cast<char *>("vec3.mtx"), 'd', true, &m, &n, &nnz2, &b, &ib, &jb);
+
+    double d_dense[3];
+    double b_dense[3];
+
+    double x0[3] = {1,1,1};
+
+
+
+
+    toDenseVector(m, nnz2, b, ib, b_dense);
+
+    std::cout << "base " << Base::Base1 << std::endl;
+
+    double dt;
+    double x[3];
+
+    std::cout << "nnz " << nnz << std::endl;
+    std::cout << "m " << m << std::endl;
+
+    double dtAlg;
+    bicgstab_lu_precond(m, nnz, A0, iA0, jA0, b_dense, 200, 1e-5, true, x, &dtAlg);
+
+    std::ostringstream stream;
+    dump_vector(stream, 3, x);
+    dump_vector(stream, 3, d_dense);
+    dump_vector(stream, 3, b_dense);
+
+    std::cout << stream.str() << std::endl;
+
+    free(A0);
+    free(iA0);
+    free(jA0);
+    free(b);
+    free(ib);
+    free(jb);
+
+}
+
+/*int main(int argc, char *argv[]){
+	return 0;
+}*/
+
+int main (int argc, char *argv[]){
     int status = EXIT_FAILURE;
     char *matrix_filename = NULL;
 	char *vector_filename = NULL;
     bool debug=false;
-    double prob_of_zero_mat = 0.1;
-    double prob_of_zero_vec = 0.0;
-    int dim = 4;
+    double prob_of_zero_mat = 0.99;
+    double prob_of_zero_vec = 0.2;
+    int dim = 10000;
 	bool print = false;
 
 
 	const int maxit = 2000;
-    const double tol= 0.0000001;
+    const double tol= 1e-6;
 
 
 
     /* WARNING: it is assumed that the matrices are stores in Matrix Market format */
     printf("WARNING: it is assumed that the matrices are stored in Matrix Market format with double as element type\n Usage: ./BiCGStab -M[matrix.mtx] -V[vector.mtx] [-D] -R[prob of zero] -N[dim] [-P] [device=<num>]\n"
-		   "By default matrix will be random, N = 4, P(X = 0)=0.1, vector will be random, P(X = 0)=0.1\n"
+		   "By default matrix will be random, N = 10000, P(X = 0)=0.99, vector will be random, P(X = 0)=0.1\n"
            "example usage:\n"
            "./example.exe -M\"mat10000.mtx\"\n"
            "./example.exe -M\"mat3.mtx\" -V\"vec3.mtx\" -D -P\n"
@@ -211,7 +270,19 @@ int main1 (int argc, char *argv[]){
 
 
 
-		nnz = gen_rand_csr_matrix<Base::Base1>(dim, dim, &_A, &_IA, &_JA, prob_of_zero_mat, 1.0, 5.0, 1e-2);
+		//nnz = gen_rand_csr_matrix<Base::Base1>(dim, dim, &_A, &_IA, &_JA, prob_of_zero_mat, 1.0, 5.0, 1e-2);
+		nnz = fill_csr_matrix<Base::Base1>(dim, dim, &_A, &_IA, &_JA, [&](int i, int j){
+		     if(i == j) return rand_float(1, 10); //A[i,i] is never zero
+		     else {
+		         if(rand_float_0_1() >= prob_of_zero_mat){
+                     return rand_float(1, 10);
+		         }else{
+		             return 0.0;
+		         }
+		     }
+
+		    }
+		    , 1e-3);
 		n = dim;
 
 
@@ -278,7 +349,7 @@ int main1 (int argc, char *argv[]){
 
 	double dtAlg;
 	auto t1 = second();
-	bool solved = bicgstab(n, nnz, A, iA, jA, b, maxit, tol, debug, x, &dtAlg);
+	bool solved = bicgstab_lu_precond(n, nnz, A, iA, jA, b, maxit, tol, debug, x, &dtAlg);
 	auto t2 = second();
 
 	if(solved){
